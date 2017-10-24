@@ -1,0 +1,9 @@
+#!/bin/bash
+set -e
+set -u
+
+exec <"$1"
+while read url ; do
+  file=dist/${url##*/}
+  echo $file
+done
