@@ -2,8 +2,70 @@
 set -e
 set -u
 
+#scratches=/tmp
+scratches=scratches
+
+
+error () {
+  local errno=''
+  case "$1" in
+    -EINVAL) errno=22 ;;
+  esac
+  [ -n "$errno" ] && shift
+  echo >&2 Error:"$@"
+  [ -n "$errno" ] && exit "$errno"
+}
+
+
 exec <"$1"
 while read url ; do
+  hash=$(sha256sum <<<"$url" | cut -c1-64)
+  scratch=$scratches/$hash
+  status=statuses/$hash
+  result=results/$hash
+  extracted=$status/extracted
+  installed=$status/installed
+  archived=$status/archived
   file=dist/${url##*/}
-  echo $file
+
+  mkdir -p "$status" "$scratch" "$result"
+
+  case "$file" in
+    *.tar.gz) extract=(tar xf "$file" -C "$scratch") ;;
+    *) error EINVAL Unrecognized type: ".${file#*.}" ;;
+  esac
+
+  if [ "$extracted" -ot "$0" -o "$extracted" -ot "$file" ] ; then
+    rm -rf "$scratch"
+    mkdir -p "$scratch"
+    "${extract[@]}"
+    touch "$extracted"
+  fi
+
+  source_dir=$scratch
+  if [ "$(ls -1 "$scratch" | wc -l)" -eq 1 ] ; then
+    source_dir=$(echo "$scratch"/*)
+  fi
+
+  if [ "$installed" -ot "$extracted" ] ; then
+    if [ -x "$source_dir/configure" ] ; then
+      (
+        cd "$source_dir"
+        ./configure \
+            --prefix=/usr/local \
+            --disable-shared \
+            --enable-static
+        make
+        make install
+      )
+      touch "$installed"
+    else
+      error EINVAL Unrecognized build type for "$file"
+    fi
+  fi
+
+  if [ "$archived" -ot "$installed" ] ; then
+    now=$(date -u +%s-%Y%m%d)
+    tar czf "$result/local.$now.tgz" -C /usr local
+  fi
 done
