@@ -31,7 +31,7 @@ while read url ; do
   mkdir -p "$status" "$scratch" "$result"
 
   case "$file" in
-    *.tar.gz) extract=(tar xf "$file" -C "$scratch") ;;
+    *.tar.gz) extract=(tar xf "$file" -C "$scratch" --warning=no-unknown-keyword) ;;
     *) error EINVAL Unrecognized type: ".${file#*.}" ;;
   esac
 
