@@ -35,7 +35,7 @@ while read url ; do
     *) error EINVAL Unrecognized type: ".${file#*.}" ;;
   esac
 
-  if [ "$extracted" -ot "$0" -o "$extracted" -ot "$file" ] ; then
+  if [ "$extracted" -ot "$file" ] ; then
     rm -rf "$scratch"
     mkdir -p "$scratch"
     "${extract[@]}"
