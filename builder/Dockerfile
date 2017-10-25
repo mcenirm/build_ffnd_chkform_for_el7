@@ -7,4 +7,5 @@ RUN yum -y install libuuid-devel
 RUN yum -y install libcurl-devel
 RUN yum -y install libxml2-devel
 RUN yum -y install openssl-devel
+RUN yum -y install readline-devel
 USER builder
